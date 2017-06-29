@@ -7,12 +7,16 @@ module.exports = class extends Generator {
     constructor(args, opts) {
         super(args, opts);
 
-        this.argument('name', {type: String, required: true});
-
-        this.log(this.options.name);
+        this.option('name', {type: String, required: true});
+        this.option('baseDir', {type: String, required: false, default: this.destinationRoot()});
+        this.option('unit', {type: Boolean, required: false, default: false});
     }
 
     writing() {
+        if (this.options.baseDir) {
+            this.destinationRoot(this.options.baseDir);
+        }
+
         const name = this.options.name
             .replace('Component', '')
             .replace(/^./, str => str.toUpperCase());
@@ -27,24 +31,26 @@ module.exports = class extends Generator {
         mkdirp.sync(dir);
 
         this.fs.copyTpl(
-            this.templatePath('component.ts'),
-            this.destinationPath(dir, `${data.nameLower}.component.ts`),
-            data
-        );
-
-        this.fs.copyTpl(
             this.templatePath('unit.ts'),
             this.destinationPath(dir, `${data.nameLower}.component.unit.ts`),
             data
         );
 
-        this.fs.copyTpl(
-            this.templatePath('module.ts'),
-            this.destinationPath(dir, `${data.nameLower}.module.ts`),
-            data
-        );
+        if (!this.options.unit) {
+            this.fs.copyTpl(
+                this.templatePath('component.ts'),
+                this.destinationPath(dir, `${data.nameLower}.component.ts`),
+                data
+            );
 
-        this.fs.write(this.destinationPath(dir, `${data.nameLower}.template.ng2.html`), '');
+            this.fs.copyTpl(
+                this.templatePath('module.ts'),
+                this.destinationPath(dir, `${data.nameLower}.module.ts`),
+                data
+            );
+
+            this.fs.write(this.destinationPath(dir, `${data.nameLower}.template.ng2.html`), '');
+        }
     }
 
     _getSelector(name) {
